@@ -17,10 +17,12 @@ app.use("/foods", foodRoutes);
 app.use("/requests", requestRoutes);
 
 // MongoDB connection
-mongoose.connect("mongodb://127.0.0.1:27017/food_waste_db")
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
