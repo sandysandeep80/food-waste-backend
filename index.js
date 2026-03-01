@@ -15,6 +15,9 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/foods", foodRoutes);
 app.use("/requests", requestRoutes);
+app.get("/", (req, res) => {
+  res.send("Food Waste Backend is Running 🚀");
+});
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
