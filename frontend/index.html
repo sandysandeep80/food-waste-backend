@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Waste Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Food Waste Management System</h1>
+
+<!-- LOGIN -->
+<h2>Login</h2>
+<input type="text" id="username" placeholder="Username">
+<br><br>
+<input type="password" id="password" placeholder="Password">
+<br><br>
+<button onclick="login()">Login</button>
+<button onclick="logout()">Logout</button>
+
+<hr>
+
+<!-- ADD FOOD (WILL BE HIDDEN FOR NGO) -->
+<div id="addFoodSection">
+    <h2>Add Food</h2>
+    <input id="foodName" placeholder="Food Name">
+    <input id="quantity" placeholder="Quantity">
+    <input id="location" placeholder="Location">
+    <button onclick="addFood()">Add Food</button>
+</div>
+
+<hr>
+
+<h2>Food List</h2>
+<ul id="foodList"></ul>
+
+<h2>Request List</h2>
+<ul id="requestList"></ul>
+
+<script src="script.js"></script>
+</body>
+</html>
