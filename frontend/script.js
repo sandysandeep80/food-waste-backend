@@ -5,7 +5,7 @@ function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
 
-  fetch("http://localhost:5000/auth/login", {
+  fetch("https://food-waste-backend-1.onrender.com/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
@@ -40,7 +40,7 @@ function addFood() {
   const quantity = document.getElementById("quantity").value;
   const location = document.getElementById("location").value;
 
-  fetch("http://localhost:5000/foods", {
+  fetch("https://food-waste-backend-1.onrender.com/foods", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -56,7 +56,7 @@ function addFood() {
 
 // ================= LOAD FOODS =================
 function loadFoods() {
-  fetch("http://localhost:5000/foods")
+  fetch("https://food-waste-backend-1.onrender.com/foods")
   .then(res => res.json())
   .then(data => {
     const list = document.getElementById("foodList");
@@ -79,7 +79,7 @@ function loadFoods() {
 
 // ================= SEND REQUEST (NGO) =================
 function requestFood(foodId) {
-  fetch("http://localhost:5000/requests", {
+  fetch("https://food-waste-backend-1.onrender.com/requests", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -98,7 +98,7 @@ function requestFood(foodId) {
 // ================= LOAD REQUESTS =================
 
 function loadRequests() {
-  fetch("http://localhost:5000/requests", {
+  fetch("https://food-waste-backend-1.onrender.com/requests", {
     headers: {
       "Authorization": localStorage.getItem("token")
     }
