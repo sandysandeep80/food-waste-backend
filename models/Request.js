@@ -3,16 +3,19 @@ const mongoose = require("mongoose");
 const requestSchema = new mongoose.Schema({
   foodId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Food"
+    ref: "Food",
+    required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
+    required: true
   },
   status: {
     type: String,
+    enum: ["pending", "approved", "rejected"],
     default: "pending"
   }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Request", requestSchema);
