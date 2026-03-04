@@ -1,38 +1,4 @@
-const isFileProtocol = window.location.protocol === "file:";
-const DEFAULT_API_BASE = (isFileProtocol || ["localhost", "127.0.0.1"].includes(window.location.hostname))
-  ? "http://localhost:10000"
-  : "https://food-waste-backend-1.onrender.com";
-
-function cleanApiBase(value) {
-  return String(value || "").trim().replace(/\/+$/, "");
-}
-
-function resolveApiBase() {
-  const isLocalFrontend = isFileProtocol || ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  const storedApiBase = cleanApiBase(localStorage.getItem("apiBase"));
-
-  if (!storedApiBase) {
-    return DEFAULT_API_BASE;
-  }
-
-  if (!isLocalFrontend) {
-    return storedApiBase;
-  }
-
-  try {
-    const parsed = new URL(storedApiBase);
-    const isLocalBackend = ["localhost", "127.0.0.1"].includes(parsed.hostname);
-    if (isLocalBackend) {
-      return storedApiBase;
-    }
-  } catch (err) {
-    // Ignore malformed saved value and fall back to default local backend.
-  }
-
-  return DEFAULT_API_BASE;
-}
-
-const API_BASE = resolveApiBase();
+const API_BASE = "https://food-waste-backend-3.onrender.com";
 
 function normalizeToken(token) {
   if (!token) return "";
@@ -44,6 +10,88 @@ const state = {
   role: localStorage.getItem("role") || "",
   username: ""
 };
+
+const moduleIds = [
+  "accessModule",
+  "statsModule",
+  "addFoodModule",
+  "feedModule",
+  "requestModule",
+  "insightsModule"
+];
+let activeModuleId = "accessModule";
+
+function getModuleElement(id) {
+  return document.getElementById(id);
+}
+
+function getVisibleModuleElements() {
+  return moduleIds
+    .map((id) => getModuleElement(id))
+    .filter((el) => el && window.getComputedStyle(el).display !== "none");
+}
+
+function renderModuleStepper() {
+  const stepper = document.getElementById("moduleStepper");
+  if (!stepper) return;
+
+  const visibleModules = getVisibleModuleElements();
+  stepper.innerHTML = "";
+
+  visibleModules.forEach((module, index) => {
+    const label = module.querySelector("h2")?.textContent || `Module ${index + 1}`;
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `module-tab${module.id === activeModuleId ? " active" : ""}`;
+    tab.textContent = `${index + 1}. ${label}`;
+    tab.addEventListener("click", () => setActiveModule(module.id));
+    stepper.appendChild(tab);
+  });
+}
+
+function setActiveModule(moduleId) {
+  const visibleModules = getVisibleModuleElements();
+  if (!visibleModules.length) return;
+
+  const isRequestedVisible = visibleModules.some((module) => module.id === moduleId);
+  const safeModuleId = isRequestedVisible ? moduleId : visibleModules[0].id;
+
+  moduleIds.forEach((id) => {
+    const module = getModuleElement(id);
+    if (!module) return;
+    module.classList.toggle("active", id === safeModuleId);
+  });
+
+  activeModuleId = safeModuleId;
+  renderModuleStepper();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function goToAdjacentModule(direction) {
+  const visibleModules = getVisibleModuleElements();
+  if (!visibleModules.length) return;
+
+  const currentIndex = visibleModules.findIndex((module) => module.id === activeModuleId);
+  const safeCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
+  const targetIndex = safeCurrentIndex + direction;
+  if (targetIndex < 0 || targetIndex >= visibleModules.length) return;
+  setActiveModule(visibleModules[targetIndex].id);
+}
+
+function wireModuleNavigation() {
+  document.querySelectorAll("[data-nav]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nav = button.dataset.nav;
+      if (nav === "next") {
+        goToAdjacentModule(1);
+      } else if (nav === "prev") {
+        goToAdjacentModule(-1);
+      } else if (nav === "first") {
+        setActiveModule("accessModule");
+      }
+    });
+  });
+}
 
 function showToast(message) {
   const toast = document.getElementById("toast");
@@ -121,8 +169,13 @@ function setAuthUI() {
 
   document.getElementById("roleBadge").textContent = roleText;
   document.getElementById("authState").textContent = authText;
-  document.getElementById("addFoodPanel").style.display =
+  document.getElementById("addFoodModule").style.display =
     state.role === "admin" || state.role === "donor" ? "block" : "none";
+  renderModuleStepper();
+  const activeModule = getModuleElement(activeModuleId);
+  if (!activeModule || window.getComputedStyle(activeModule).display === "none") {
+    setActiveModule("accessModule");
+  }
 }
 
 function checkLocalSetupHint() {
@@ -307,6 +360,11 @@ async function handleLogin(event) {
     applySession(username, data.token, data.role);
     await Promise.all([loadFoods(), loadRequests(), loadInsights()]);
     showToast(`Logged in as ${data.role}`);
+    if (data.role === "ngo") {
+      setActiveModule("feedModule");
+    } else {
+      setActiveModule("addFoodModule");
+    }
   } catch (err) {
     clearSession();
     renderRequests([]);
@@ -339,6 +397,11 @@ async function handleRegister(event) {
     await Promise.all([loadFoods(), loadRequests(), loadInsights()]);
     showToast(`Registered and logged in as ${loginData.role}`);
     event.target.reset();
+    if (loginData.role === "ngo") {
+      setActiveModule("feedModule");
+    } else {
+      setActiveModule("addFoodModule");
+    }
   } catch (err) {
     showToast(err.message);
   }
@@ -380,6 +443,7 @@ async function handleAddFood(event) {
     showToast(data.message || "Food listed");
     event.target.reset();
     await Promise.all([loadFoods(), loadInsights()]);
+    setActiveModule("feedModule");
   } catch (err) {
     showToast(err.message);
   }
@@ -423,6 +487,7 @@ async function handleFoodListClick(event) {
       });
       showToast(data.message || "Request sent");
       await loadRequests();
+      setActiveModule("requestModule");
       return;
     }
 
@@ -447,6 +512,7 @@ function handleLogout() {
 }
 
 function wireEvents() {
+  wireModuleNavigation();
   document.getElementById("loginForm").addEventListener("submit", handleLogin);
   document.getElementById("registerForm").addEventListener("submit", handleRegister);
   document.getElementById("forgotPasswordForm").addEventListener("submit", handleForgotPassword);
@@ -462,6 +528,7 @@ function wireEvents() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   wireEvents();
+  setActiveModule("accessModule");
   await checkApi();
   setAuthUI();
   checkLocalSetupHint();

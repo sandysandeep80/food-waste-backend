@@ -27,7 +27,9 @@
       </div>
     </header>
 
-    <section class="panel auth-panel">
+    <nav id="moduleStepper" class="module-stepper"></nav>
+
+    <section id="accessModule" class="panel auth-panel module-page">
       <h2>Access</h2>
       <p class="muted">Mode is based on the account role. Use a different account to switch mode.</p>
       <p id="apiStatus" class="muted">Backend: checking...</p>
@@ -59,9 +61,12 @@
         </form>
       </div>
       <button id="logoutBtn" class="ghost-btn">Logout</button>
+      <div class="module-actions">
+        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+      </div>
     </section>
 
-    <section class="stats-grid">
+    <section id="statsModule" class="stats-grid module-page">
       <article class="stat-card">
         <p>Total Listings</p>
         <h3 id="statTotalFoods">0</h3>
@@ -78,9 +83,13 @@
         <p>Added Last 7 Days</p>
         <h3 id="statRecent">0</h3>
       </article>
+      <div class="module-actions stats-actions">
+        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+      </div>
     </section>
 
-    <section id="addFoodPanel" class="panel">
+    <section id="addFoodModule" class="panel module-page">
       <h2>Add Food Listing</h2>
       <form id="addFoodForm" class="inline-form">
         <input id="foodName" placeholder="Food name" required>
@@ -97,9 +106,13 @@
         </select>
         <button type="submit">Publish Listing</button>
       </form>
+      <div class="module-actions">
+        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section id="feedModule" class="panel module-page">
       <h2>Food Feed</h2>
       <form id="filterForm" class="inline-form">
         <input id="searchInput" placeholder="Search food">
@@ -116,14 +129,22 @@
         <button type="submit">Apply</button>
       </form>
       <div id="foodList" class="list-grid"></div>
+      <div class="module-actions">
+        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section id="requestModule" class="panel module-page">
       <h2>Request Stream</h2>
       <div id="requestList" class="list-grid"></div>
+      <div class="module-actions">
+        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+      </div>
     </section>
 
-    <section class="panel insights-panel">
+    <section id="insightsModule" class="panel insights-panel module-page">
       <h2>Rescue Heat</h2>
       <div class="insights-grid">
         <article>
@@ -134,6 +155,10 @@
           <h3>Category Mix</h3>
           <ul id="categoryInsights" class="insight-list"></ul>
         </article>
+      </div>
+      <div class="module-actions">
+        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
+        <button type="button" class="ghost-btn" data-nav="first">Back To Start</button>
       </div>
     </section>
   </main>

@@ -63,6 +63,36 @@ body {
   gap: 18px;
 }
 
+.module-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.module-tab {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #f9fbff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.module-tab.active {
+  background: linear-gradient(120deg, var(--brand) 0%, #ec8b25 100%);
+  border-color: transparent;
+}
+
+.module-page {
+  display: none;
+}
+
+.module-page.active {
+  display: block;
+}
+
 .hero,
 .panel,
 .stat-card {
@@ -219,6 +249,17 @@ button:hover {
 .ghost-btn:hover {
   background: var(--glass);
   box-shadow: none;
+}
+
+.module-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.stats-actions {
+  grid-column: 1 / -1;
 }
 
 .stats-grid {
