@@ -5,16 +5,38 @@ function normalizeToken(token) {
   return String(token).replace(/^"+|"+$/g, "").trim();
 }
 
+function getStoredValue(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (err) {
+    return "";
+  }
+}
+
+function setStoredValue(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    // Ignore storage write failures in restricted browser contexts.
+  }
+}
+
+function removeStoredValue(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
+    // Ignore storage remove failures in restricted browser contexts.
+  }
+}
+
 const state = {
-  token: normalizeToken(localStorage.getItem("token")),
-  role: localStorage.getItem("role") || "",
+  token: normalizeToken(getStoredValue("token")),
+  role: getStoredValue("role") || "",
   username: ""
 };
 
 const moduleIds = [
   "accessModule",
-  "statsModule",
-  "addFoodModule",
   "feedModule",
   "requestModule",
   "insightsModule"
@@ -28,7 +50,7 @@ function getModuleElement(id) {
 function getVisibleModuleElements() {
   return moduleIds
     .map((id) => getModuleElement(id))
-    .filter((el) => el && window.getComputedStyle(el).display !== "none");
+    .filter((el) => el && !el.classList.contains("unavailable"));
 }
 
 function renderModuleStepper() {
@@ -67,7 +89,33 @@ function setActiveModule(moduleId) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function setModuleAvailability() {
+  const isLoggedIn = Boolean(state.token);
+
+  moduleIds.forEach((id) => {
+    const module = getModuleElement(id);
+    if (!module) return;
+
+    let isAvailable = false;
+
+    if (id === "accessModule") {
+      isAvailable = true;
+    } else if (!isLoggedIn) {
+      isAvailable = false;
+    } else {
+      isAvailable = true;
+    }
+
+    module.classList.toggle("unavailable", !isAvailable);
+  });
+}
+
 function goToAdjacentModule(direction) {
+  if (!state.token && direction > 0 && activeModuleId === "accessModule") {
+    showToast("Please login first");
+    return;
+  }
+
   const visibleModules = getVisibleModuleElements();
   if (!visibleModules.length) return;
 
@@ -95,9 +143,51 @@ function wireModuleNavigation() {
 
 function showToast(message) {
   const toast = document.getElementById("toast");
+  if (!toast) {
+    alert(message);
+    return;
+  }
   toast.textContent = message;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+function ensureAuthMessageNode() {
+  const accessModule = document.getElementById("accessModule");
+  if (!accessModule) return null;
+
+  let message = document.getElementById("authMessage");
+  if (!message) {
+    message = document.createElement("p");
+    message.id = "authMessage";
+    message.className = "muted";
+    accessModule.insertBefore(message, accessModule.querySelector(".auth-grid"));
+  }
+  return message;
+}
+
+function setAuthMessage(text, isError = false) {
+  const message = ensureAuthMessageNode();
+  if (!message) return;
+  message.textContent = text || "";
+  message.style.color = isError ? "#bf2f4a" : "";
+}
+
+function setFormBusy(formId, isBusy, busyText = "Please wait...") {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (!submitButton) return;
+
+  if (isBusy) {
+    submitButton.dataset.originalText = submitButton.textContent;
+    submitButton.textContent = busyText;
+    submitButton.disabled = true;
+    return;
+  }
+
+  submitButton.disabled = false;
+  submitButton.textContent = submitButton.dataset.originalText || submitButton.textContent;
 }
 
 function setApiStatus(text) {
@@ -116,8 +206,8 @@ function applySession(username, tokenValue, roleValue) {
   state.token = normalizedToken;
   state.role = roleValue;
   state.username = username || "";
-  localStorage.setItem("token", normalizedToken);
-  localStorage.setItem("role", roleValue);
+  setStoredValue("token", normalizedToken);
+  setStoredValue("role", roleValue);
   setAuthUI();
 }
 
@@ -125,19 +215,35 @@ function clearSession() {
   state.token = "";
   state.role = "";
   state.username = "";
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
+  removeStoredValue("token");
+  removeStoredValue("role");
   setAuthUI();
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...authHeader()
+  const timeoutMs = options.timeoutMs || 20000;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        ...(options.headers || {}),
+        ...authHeader()
+      }
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Server timeout. Please try again.");
     }
-  });
+    throw new Error("Network error. Check backend/CORS and try again.");
+  } finally {
+    clearTimeout(timeout);
+  }
+
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data.message || "Request failed";
@@ -166,14 +272,18 @@ async function checkApi() {
 function setAuthUI() {
   const roleText = state.role ? `${state.role.toUpperCase()} mode` : "Guest";
   const authText = state.token ? "Signed in" : "Signed out";
+  const addFoodPanel = document.getElementById("addFoodPanel");
+  const canAddFood = state.role === "admin" || state.role === "donor";
 
   document.getElementById("roleBadge").textContent = roleText;
   document.getElementById("authState").textContent = authText;
-  document.getElementById("addFoodModule").style.display =
-    state.role === "admin" || state.role === "donor" ? "block" : "none";
+  if (addFoodPanel) {
+    addFoodPanel.style.display = canAddFood ? "block" : "none";
+  }
+  setModuleAvailability();
   renderModuleStepper();
   const activeModule = getModuleElement(activeModuleId);
-  if (!activeModule || window.getComputedStyle(activeModule).display === "none") {
+  if (!activeModule || activeModule.classList.contains("unavailable")) {
     setActiveModule("accessModule");
   }
 }
@@ -302,10 +412,18 @@ function renderInsights(insights) {
 }
 
 async function loadFoods() {
+  const list = document.getElementById("foodList");
+  if (list) {
+    list.innerHTML = `<article class="item"><p class="muted">Loading food feed...</p></article>`;
+  }
+
   try {
     const foods = await api(`/foods${buildFoodQuery()}`);
-    renderFoods(foods);
+    renderFoods(Array.isArray(foods) ? foods : []);
   } catch (err) {
+    if (list) {
+      list.innerHTML = `<article class="item"><p class="muted">Unable to load feed right now.</p></article>`;
+    }
     showToast(err.message);
   }
 }
@@ -349,6 +467,8 @@ async function handleLogin(event) {
   event.preventDefault();
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value;
+  setFormBusy("loginForm", true, "Logging in...");
+  setAuthMessage("");
 
   try {
     const data = await api("/auth/login", {
@@ -360,16 +480,16 @@ async function handleLogin(event) {
     applySession(username, data.token, data.role);
     await Promise.all([loadFoods(), loadRequests(), loadInsights()]);
     showToast(`Logged in as ${data.role}`);
-    if (data.role === "ngo") {
-      setActiveModule("feedModule");
-    } else {
-      setActiveModule("addFoodModule");
-    }
+    setAuthMessage(`Login successful. Welcome ${username}.`);
+    setActiveModule("feedModule");
   } catch (err) {
     clearSession();
     renderRequests([]);
     await loadInsights();
+    setAuthMessage(`Login failed: ${err.message}`, true);
     showToast(`Login failed: ${err.message}`);
+  } finally {
+    setFormBusy("loginForm", false);
   }
 }
 
@@ -378,6 +498,8 @@ async function handleRegister(event) {
   const username = document.getElementById("registerUsername").value.trim();
   const password = document.getElementById("registerPassword").value;
   const role = document.getElementById("registerRole").value;
+  setFormBusy("registerForm", true, "Registering...");
+  setAuthMessage("");
 
   try {
     await api("/auth/register", {
@@ -396,14 +518,14 @@ async function handleRegister(event) {
     applySession(username, loginData.token, loginData.role);
     await Promise.all([loadFoods(), loadRequests(), loadInsights()]);
     showToast(`Registered and logged in as ${loginData.role}`);
+    setAuthMessage(`Registered successfully as ${loginData.role}.`);
     event.target.reset();
-    if (loginData.role === "ngo") {
-      setActiveModule("feedModule");
-    } else {
-      setActiveModule("addFoodModule");
-    }
+    setActiveModule("feedModule");
   } catch (err) {
+    setAuthMessage(`Register failed: ${err.message}`, true);
     showToast(err.message);
+  } finally {
+    setFormBusy("registerForm", false);
   }
 }
 
@@ -411,6 +533,8 @@ async function handleForgotPassword(event) {
   event.preventDefault();
   const username = document.getElementById("forgotUsername").value.trim();
   const newPassword = document.getElementById("forgotNewPassword").value;
+  setFormBusy("forgotPasswordForm", true, "Resetting...");
+  setAuthMessage("");
 
   try {
     const data = await api("/auth/forgot-password", {
@@ -419,9 +543,13 @@ async function handleForgotPassword(event) {
       body: JSON.stringify({ username, newPassword })
     });
     showToast(data.message || "Password reset successful");
+    setAuthMessage(data.message || "Password reset successful");
     event.target.reset();
   } catch (err) {
+    setAuthMessage(`Reset failed: ${err.message}`, true);
     showToast(err.message);
+  } finally {
+    setFormBusy("forgotPasswordForm", false);
   }
 }
 
@@ -470,8 +598,11 @@ async function handleRequestListClick(event) {
 }
 
 async function handleFoodListClick(event) {
-  const action = event.target.dataset.action;
-  const foodId = event.target.dataset.foodId;
+  const actionButton = event.target.closest("button[data-action][data-food-id]");
+  if (!actionButton) return;
+
+  const action = actionButton.dataset.action;
+  const foodId = actionButton.dataset.foodId;
   if (!action || !foodId) return;
 
   try {
@@ -508,26 +639,35 @@ function handleLogout() {
   clearSession();
   renderRequests([]);
   loadInsights();
+  setActiveModule("accessModule");
   showToast("Logged out");
 }
 
 function wireEvents() {
+  const bind = (id, event, handler) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener(event, handler);
+    }
+  };
+
   wireModuleNavigation();
-  document.getElementById("loginForm").addEventListener("submit", handleLogin);
-  document.getElementById("registerForm").addEventListener("submit", handleRegister);
-  document.getElementById("forgotPasswordForm").addEventListener("submit", handleForgotPassword);
-  document.getElementById("addFoodForm").addEventListener("submit", handleAddFood);
-  document.getElementById("filterForm").addEventListener("submit", async (event) => {
+  bind("loginForm", "submit", handleLogin);
+  bind("registerForm", "submit", handleRegister);
+  bind("forgotPasswordForm", "submit", handleForgotPassword);
+  bind("addFoodForm", "submit", handleAddFood);
+  bind("filterForm", "submit", async (event) => {
     event.preventDefault();
     await loadFoods();
   });
-  document.getElementById("logoutBtn").addEventListener("click", handleLogout);
-  document.getElementById("requestList").addEventListener("click", handleRequestListClick);
-  document.getElementById("foodList").addEventListener("click", handleFoodListClick);
+  bind("logoutBtn", "click", handleLogout);
+  bind("requestList", "click", handleRequestListClick);
+  bind("foodList", "click", handleFoodListClick);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   wireEvents();
+  clearSession();
   setActiveModule("accessModule");
   await checkApi();
   setAuthUI();

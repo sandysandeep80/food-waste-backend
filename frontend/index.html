@@ -31,8 +31,7 @@
 
     <section id="accessModule" class="panel auth-panel module-page">
       <h2>Access</h2>
-      <p class="muted">Mode is based on the account role. Use a different account to switch mode.</p>
-      <p id="apiStatus" class="muted">Backend: checking...</p>
+      <p class="muted">Login, create account, and reset password.</p>
       <div class="auth-grid">
         <form id="loginForm" class="form">
           <h3>Login</h3>
@@ -60,60 +59,41 @@
           <button type="submit">Reset Password</button>
         </form>
       </div>
+      <section class="support-card" aria-label="Support and Help">
+        <h3>Support & Help</h3>
+        <p class="muted">If login or feed is not working, try these quick steps:</p>
+        <ol class="support-list">
+          <li>Hard refresh the page with <strong>Ctrl + Shift + R</strong>.</li>
+          <li>Clear browser site data for this domain.</li>
+          <li>Use Forgot Password and login again.</li>
+        </ol>
+        <p class="muted">Need help now: <a href="mailto:support@rescueradar.app">support@rescueradar.app</a></p>
+      </section>
       <button id="logoutBtn" class="ghost-btn">Logout</button>
-      <div class="module-actions">
-        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
-      </div>
-    </section>
-
-    <section id="statsModule" class="stats-grid module-page">
-      <article class="stat-card">
-        <p>Total Listings</p>
-        <h3 id="statTotalFoods">0</h3>
-      </article>
-      <article class="stat-card">
-        <p>Total Quantity</p>
-        <h3 id="statTotalQuantity">0</h3>
-      </article>
-      <article class="stat-card">
-        <p>Low Stock Alerts</p>
-        <h3 id="statLowStock">0</h3>
-      </article>
-      <article class="stat-card">
-        <p>Added Last 7 Days</p>
-        <h3 id="statRecent">0</h3>
-      </article>
-      <div class="module-actions stats-actions">
-        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
-        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
-      </div>
-    </section>
-
-    <section id="addFoodModule" class="panel module-page">
-      <h2>Add Food Listing</h2>
-      <form id="addFoodForm" class="inline-form">
-        <input id="foodName" placeholder="Food name" required>
-        <input id="quantity" type="number" min="1" placeholder="Quantity" required>
-        <input id="location" placeholder="Location" required>
-        <input id="contactName" placeholder="Contact person" required>
-        <input id="contactNumber" placeholder="Contact number" required>
-        <select id="category">
-          <option value="mixed">Mixed</option>
-          <option value="veg">Veg</option>
-          <option value="non-veg">Non-veg</option>
-          <option value="bakery">Bakery</option>
-          <option value="packaged">Packaged</option>
-        </select>
-        <button type="submit">Publish Listing</button>
-      </form>
-      <div class="module-actions">
-        <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
-        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
-      </div>
     </section>
 
     <section id="feedModule" class="panel module-page">
       <h2>Food Feed</h2>
+      <div id="addFoodPanel">
+        <h3>Add Food Listing</h3>
+        <form id="addFoodForm" class="inline-form">
+          <input id="foodName" placeholder="Food name" required>
+          <input id="quantity" type="number" min="1" placeholder="Quantity" required>
+          <input id="location" placeholder="Location" required>
+          <input id="contactName" placeholder="Contact person" required>
+          <input id="contactNumber" placeholder="Contact number" required>
+          <select id="category">
+            <option value="mixed">Mixed</option>
+            <option value="veg">Veg</option>
+            <option value="non-veg">Non-veg</option>
+            <option value="bakery">Bakery</option>
+            <option value="packaged">Packaged</option>
+          </select>
+          <button type="submit">Publish Listing</button>
+        </form>
+      </div>
+
+      <h3>Browse Feed</h3>
       <form id="filterForm" class="inline-form">
         <input id="searchInput" placeholder="Search food">
         <input id="filterLocation" placeholder="Filter by location">
@@ -131,7 +111,7 @@
       <div id="foodList" class="list-grid"></div>
       <div class="module-actions">
         <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
-        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next</button>
       </div>
     </section>
 
@@ -140,12 +120,38 @@
       <div id="requestList" class="list-grid"></div>
       <div class="module-actions">
         <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
-        <button type="button" class="ghost-btn" data-nav="next">Next Module</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next</button>
       </div>
     </section>
 
     <section id="insightsModule" class="panel insights-panel module-page">
       <h2>Rescue Heat</h2>
+      <div class="stats-grid">
+        <article class="stat-card">
+          <p>Total Listings</p>
+          <h3 id="statTotalFoods">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Total Quantity</p>
+          <h3 id="statTotalQuantity">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Low Stock Alerts</p>
+          <h3 id="statLowStock">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Added Last 7 Days</p>
+          <h3 id="statRecent">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Donor Food History</p>
+          <h3 id="statDonorHistory">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>NGO Request History</p>
+          <h3 id="statNgoHistory">0</h3>
+        </article>
+      </div>
       <div class="insights-grid">
         <article>
           <h3>Top Locations</h3>
@@ -158,7 +164,8 @@
       </div>
       <div class="module-actions">
         <button type="button" class="ghost-btn" data-nav="prev">Previous</button>
-        <button type="button" class="ghost-btn" data-nav="first">Back To Start</button>
+        <button type="button" class="ghost-btn" data-nav="next">Next</button>
+        <button type="button" class="ghost-btn" data-nav="first">Back To Login</button>
       </div>
     </section>
   </main>

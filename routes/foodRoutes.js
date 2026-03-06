@@ -4,6 +4,11 @@ const requireRoles = require("../middleware/roleMiddleware");
 const Food = require("../models/Food");
 
 const router = express.Router();
+const ALLOWED_CATEGORIES = new Set(["veg", "non-veg", "mixed", "bakery", "packaged"]);
+
+function escapeRegex(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 router.post("/", verifyToken, requireRoles("admin", "donor"), async (req, res) => {
   try {
@@ -50,20 +55,20 @@ router.get("/", async (req, res) => {
     const filter = {};
 
     if (q) {
-      filter.foodName = { $regex: q, $options: "i" };
+      filter.foodName = { $regex: escapeRegex(q), $options: "i" };
     }
 
     if (location) {
-      filter.location = { $regex: location, $options: "i" };
+      filter.location = { $regex: escapeRegex(location), $options: "i" };
     }
 
-    if (category) {
-      filter.category = category;
+    if (category && ALLOWED_CATEGORIES.has(String(category).trim())) {
+      filter.category = String(category).trim();
     }
 
     if (minQuantity) {
       const parsedMinQuantity = Number(minQuantity);
-      if (Number.isFinite(parsedMinQuantity)) {
+      if (Number.isFinite(parsedMinQuantity) && parsedMinQuantity >= 1) {
         filter.quantity = { $gte: parsedMinQuantity };
       }
     }

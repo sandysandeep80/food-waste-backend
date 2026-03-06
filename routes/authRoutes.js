@@ -12,6 +12,10 @@ function hashPassword(password) {
 }
 
 function verifyPassword(password, storedPassword) {
+  if (typeof storedPassword !== "string" || !storedPassword) {
+    return false;
+  }
+
   const parts = storedPassword.split(":");
 
   // Backward compatibility for existing plaintext users.
@@ -20,11 +24,17 @@ function verifyPassword(password, storedPassword) {
   }
 
   const [salt, storedHash] = parts;
-  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(hash, "hex"),
-    Buffer.from(storedHash, "hex")
-  );
+  try {
+    const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+    const hashBuffer = Buffer.from(hash, "hex");
+    const storedHashBuffer = Buffer.from(storedHash, "hex");
+    if (hashBuffer.length !== storedHashBuffer.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(hashBuffer, storedHashBuffer);
+  } catch (err) {
+    return false;
+  }
 }
 
 router.post("/register", async (req, res) => {
@@ -76,9 +86,14 @@ router.post("/login", async (req, res) => {
     }
 
     // Upgrade legacy plaintext passwords on successful login.
+    // Do not block login if this background upgrade fails.
     if (!user.password.includes(":")) {
-      user.password = hashPassword(password);
-      await user.save();
+      try {
+        user.password = hashPassword(password);
+        await user.save();
+      } catch (upgradeErr) {
+        console.error("Password upgrade failed for user:", normalizedUsername, upgradeErr.message);
+      }
     }
 
     const token = jwt.sign(
@@ -93,6 +108,7 @@ router.post("/login", async (req, res) => {
       token
     });
   } catch (err) {
+    console.error("Login route error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
